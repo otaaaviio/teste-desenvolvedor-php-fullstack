@@ -80,7 +80,13 @@ class SupplierController extends BaseController
 
     public function getSupplierByCnpj(string $cnpj): JsonResponse
     {
-        $supplier = $this->documentService->getInfosByCnpj($cnpj);
+        $cleanedCnpj = preg_replace('/\D/', '', $cnpj);
+
+        if (strlen($cleanedCnpj) !== 14) {
+            throw DocumentException::invalidDocument(DocumentType::CNPJ);
+        }
+
+        $supplier = $this->documentService->getInfosByCnpj($cleanedCnpj);
 
         return $this->success($supplier);
     }
