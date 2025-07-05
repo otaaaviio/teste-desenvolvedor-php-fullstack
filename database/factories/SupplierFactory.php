@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Modules\Supplier\Enums\DocumentType;
 use App\Modules\Supplier\Models\Supplier;
+use App\Modules\Supplier\Models\SupplierAddress;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SupplierFactory extends Factory
 {
+    protected $model = Supplier::class;
+
     public function definition(): array
     {
         $documentType = $this->faker->randomElement(DocumentType::cases());
@@ -28,5 +31,13 @@ class SupplierFactory extends Factory
             'document_type' => $documentType->value,
             'phone' => $this->faker->phoneNumber,
         ];
+    }
+
+    public function withAddress(): self
+    {
+        return $this->has(
+            SupplierAddress::factory(),
+            'address'
+        );
     }
 }

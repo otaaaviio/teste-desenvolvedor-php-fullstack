@@ -7,16 +7,29 @@ use App\Modules\Supplier\DTOs\SupplierAddressDTO;
 use App\Modules\Supplier\Enums\DocumentType;
 use App\Modules\Supplier\Exceptions\DocumentException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use Symfony\Component\HttpFoundation\Response as StatusCode;
 
 class DocumentService
 {
-    protected $baseUrl = 'https://brasilapi.com.br/api';
+    protected string $baseUrl = 'https://brasilapi.com.br/api';
+
+    protected int $cacheTtl = 60 * 60;
 
     public function getInfosByCnpj(string $cnpj): CreateSupplierDTO
     {
         if (strlen($cnpj) !== 14) {
             throw DocumentException::invalidDocument(DocumentType::CNPJ);
+        }
+
+        $cacheKey = "supplier_cnpj_{$cnpj}";
+
+        $cached = Redis::get($cacheKey);
+
+        if ($cached) {
+            $data = json_decode($cached, true);
+
+            return CreateSupplierDTO::make($data);
         }
 
         $result = Http::timeout(10)->get("{$this->baseUrl}/cnpj/v1/{$cnpj}");
@@ -27,7 +40,7 @@ class DocumentService
 
         $data = $result->json();
 
-        $supplier = CreateSupplierDTO::make([
+        $data = CreateSupplierDTO::make([
             'name' => $data['razao_social'] ?? '',
             'document' => $data['cnpj'],
             'document_type' => DocumentType::CNPJ,
@@ -44,7 +57,9 @@ class DocumentService
             ],
         ]);
 
-        return $supplier;
+        Redis::setex($cacheKey, $this->cacheTtl, json_encode($data));
+
+        return $data;
     }
 
     public function validateCnpjAddress(string $cnpj, SupplierAddressDTO $supplierAddressDTO): bool

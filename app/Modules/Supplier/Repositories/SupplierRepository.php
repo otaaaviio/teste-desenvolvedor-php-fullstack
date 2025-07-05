@@ -5,13 +5,19 @@ namespace App\Modules\Supplier\Repositories;
 use App\Modules\Supplier\DTOs\CreateSupplierDTO;
 use App\Modules\Supplier\DTOs\SupplierFilterDTO;
 use App\Modules\Supplier\DTOs\UpdateSupplierDTO;
+use App\Modules\Supplier\Jobs\ClearSuppliersCache;
 use App\Modules\Supplier\Models\Supplier;
 use App\Modules\Supplier\Repositories\Contracts\SupplierRepository as SupplierRepositoryContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 
 class SupplierRepository implements SupplierRepositoryContract
 {
+    protected string $cacheKey = 'suppliers_list_';
+
+    protected int $cacheTtl = 60 * 60 * 24;
+
     public function createSupplier(CreateSupplierDTO $dto): array
     {
         DB::beginTransaction();
@@ -36,6 +42,7 @@ class SupplierRepository implements SupplierRepositoryContract
             ]);
 
             DB::commit();
+            dispatch(new ClearSuppliersCache($this->cacheKey));
 
             return $supplier
                 ->with(['address' => function ($query) {
@@ -66,6 +73,7 @@ class SupplierRepository implements SupplierRepositoryContract
         $supplier->update($updateData);
 
         $supplier->refresh();
+        dispatch(new ClearSuppliersCache($this->cacheKey));
 
         return $supplier->only(['id', 'name', 'email', 'phone']);
     }
@@ -80,6 +88,7 @@ class SupplierRepository implements SupplierRepositoryContract
 
         $supplier->delete();
         $supplier->address()->delete();
+        dispatch(new ClearSuppliersCache($this->cacheKey));
     }
 
     public function findSupplierById(int $id): ?array
@@ -91,6 +100,14 @@ class SupplierRepository implements SupplierRepositoryContract
 
     public function findAllSuppliers(SupplierFilterDTO $filters): array
     {
+        $cacheKey = $this->cacheKey.md5(json_encode($filters));
+
+        $cached = Redis::get($cacheKey);
+
+        if ($cached) {
+            return json_decode($cached, true);
+        }
+
         $colsToReturn = ['id', 'name', 'email', 'phone', 'document', 'created_at'];
 
         $query = Supplier::query();
@@ -98,7 +115,11 @@ class SupplierRepository implements SupplierRepositoryContract
         $this->applySearchFilters($query, $filters->search);
         $this->applySorting($query, $filters->sortColumn, $filters->sortOrdenation);
 
-        return $query->paginate($filters->perPage, $colsToReturn, 'page', $filters->page)->toArray();
+        $result = $query->paginate($filters->perPage, $colsToReturn, 'page', $filters->page)->toArray();
+
+        Redis::setex($cacheKey, $this->cacheTtl, json_encode($result));
+
+        return $result;
     }
 
     protected function applySearchFilters(Builder $query, ?string $searchFilter): void
