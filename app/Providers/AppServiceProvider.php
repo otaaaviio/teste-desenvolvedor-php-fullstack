@@ -2,21 +2,20 @@
 
 namespace App\Providers;
 
+use App\Modules\Supplier\Repositories\Contracts\SupplierRepository as SupplierRepositoryContract;
+use App\Modules\Supplier\Repositories\SupplierRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            SupplierRepositoryContract::class,
+            SupplierRepository::class
+        );
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         //

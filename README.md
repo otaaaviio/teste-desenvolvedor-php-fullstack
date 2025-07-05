@@ -73,3 +73,6 @@ Bem-vindo ao teste de desenvolvimento para a posição de Desenvolvedor PHP/Lara
 - Altere o arquivo README.md com as informações necessárias para executar o seu teste (comandos, migrations, seeds, etc);
 - Depois de finalizado, envie-nos o pull request;
 
+ota
+
+- fazer dtos, e repositories, *services *se for necessário
