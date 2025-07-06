@@ -68,6 +68,27 @@ test('can create a supplier with valid cnpj data', function () use ($baseUrl) {
         ]);
 });
 
+test('can not create a supplier with duplicated cnpj data', function () use ($baseUrl) {
+    $petobrasCnpj = '33000167000101';
+    $cnpjResponse = getJson($baseUrl.'/cnpj/'.$petobrasCnpj);
+
+    $cnpjData = $cnpjResponse->json() ?? [];
+
+    Supplier::factory()->create([
+        'document' => $cnpjData['data']['document'],
+    ]);
+
+    $response = postJson($baseUrl, $cnpjData['data']);
+
+    $response->assertStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)
+        ->assertJsonStructure([
+            'message',
+            'errors' => [
+                'document',
+            ],
+        ]);
+});
+
 test('can not create a supplier with invalid data', function () use ($baseUrl) {
     $response = postJson($baseUrl, []);
 
