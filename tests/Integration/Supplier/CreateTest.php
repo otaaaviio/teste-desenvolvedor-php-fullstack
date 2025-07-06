@@ -23,7 +23,7 @@ function getValidPayloadWithCPF(): array
     return [
         'name' => fake()->company(),
         'email' => fake()->email(),
-        'phone' => fake()->phoneNumber(),
+        'phone' => '(11) 91234-5678',
         'document' => '91905567049',
         'document_type' => 'CPF',
         'address' => [
