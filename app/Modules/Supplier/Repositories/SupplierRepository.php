@@ -106,7 +106,14 @@ class SupplierRepository implements SupplierRepositoryContract
     {
         $supplier = Supplier::with('address')->find($id);
 
-        return $supplier ? $supplier->toArray() : null;
+        if (!$supplier) {
+            return null;
+        }
+
+        $array = $supplier->toArray();
+        $array['document'] = $this->maskDocument($array['document'], $array['document_type'] ?? null);
+
+        return $array;
     }
 
     public function findAllSuppliers(SupplierFilterDTO $filters): array
@@ -114,7 +121,7 @@ class SupplierRepository implements SupplierRepositoryContract
         $cacheKey = md5(json_encode($filters));
 
         return cache()->tags([$this->cacheTag])->remember($cacheKey, $this->cacheTtl, function () use ($filters) {
-            $colsToReturn = ['id', 'name', 'email', 'phone', 'document', 'created_at'];
+            $colsToReturn = ['id', 'name', 'email', 'phone', 'created_at'];
 
             $query = Supplier::query();
 
@@ -149,5 +156,13 @@ class SupplierRepository implements SupplierRepositoryContract
         } else {
             $query->orderBy('created_at', 'desc');
         }
+    }
+
+    protected function maskDocument($document, $type) {
+        if ($type === 'CPF') {
+            return substr($document, 0, 3) . '******' . substr($document, -2);
+        }
+
+        return $document;
     }
 }
