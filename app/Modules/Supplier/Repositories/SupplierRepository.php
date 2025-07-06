@@ -133,9 +133,11 @@ class SupplierRepository implements SupplierRepositoryContract
 
         $searchableFields = ['name', 'email', 'phone', 'document'];
 
-        foreach ($searchableFields as $field) {
-            $query->where($field, 'like', '%'.$searchFilter.'%');
-        }
+        $query->where(function ($q) use ($searchableFields, $searchFilter) {
+            foreach ($searchableFields as $field) {
+                $q->orWhere($field, 'like', '%'.$searchFilter.'%');
+            }
+        });
     }
 
     protected function applySorting(Builder $query, string $sortColumn, string $sortOrdenation): void
