@@ -89,7 +89,7 @@ test('can be possible send search filter and receive the paginated data', functi
         ->toBePaginated()
         ->and($response->json('data.data'))
         ->toHaveCount(1)
-        ->and($response->json("data.data.0.name"))
+        ->and($response->json('data.data.0.name'))
         ->toBe($suppliers->first()->name);
 })->with(['name', 'email', 'phone', 'document']);
 

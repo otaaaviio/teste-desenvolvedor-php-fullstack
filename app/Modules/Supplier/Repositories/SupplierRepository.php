@@ -106,7 +106,7 @@ class SupplierRepository implements SupplierRepositoryContract
     {
         $supplier = Supplier::with('address')->find($id);
 
-        if (!$supplier) {
+        if (! $supplier) {
             return null;
         }
 
@@ -158,9 +158,10 @@ class SupplierRepository implements SupplierRepositoryContract
         }
     }
 
-    protected function maskDocument($document, $type) {
+    protected function maskDocument($document, $type)
+    {
         if ($type === 'CPF') {
-            return substr($document, 0, 3) . '******' . substr($document, -2);
+            return substr($document, 0, 3).'******'.substr($document, -2);
         }
 
         return $document;
