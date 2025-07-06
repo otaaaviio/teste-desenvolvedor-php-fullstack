@@ -14,7 +14,7 @@ Route::get('/healthcheck', function () {
 Route::prefix('v1')->group(function () {
     Route::prefix('suppliers')->group(function () {
         Route::post('/', [SupplierController::class, 'create']);
-        Route::put('/', [SupplierController::class, 'update']);
+        Route::put('/{supplier_id}', [SupplierController::class, 'update']);
         Route::delete('/{supplier_id}', [SupplierController::class, 'delete']);
         Route::get('/', [SupplierController::class, 'findAll']);
         Route::get('/{supplier_id}', [SupplierController::class, 'findById']);

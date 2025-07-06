@@ -11,7 +11,7 @@ class UpdateSupplierRequest extends FormRequest
         return [
             'name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:13',
+            'phone' => 'nullable|string|min:10|max:15|regex:/^\+?\d+$/',
         ];
     }
 }

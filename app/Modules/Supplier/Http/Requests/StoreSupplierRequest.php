@@ -19,7 +19,7 @@ class StoreSupplierRequest extends FormRequest
                 Rule::unique('suppliers')->whereNull('deleted_at'),
             ],
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:15',
+            'phone' => 'nullable|string|min:10|max:15|regex:/^\+?\d+$/',
 
             'address.street' => 'required|string|max:255',
             'address.number' => 'nullable|string|max:20',

@@ -10,6 +10,7 @@ use App\Modules\Supplier\Enums\DocumentType;
 use App\Modules\Supplier\Exceptions\DocumentException;
 use App\Modules\Supplier\Exceptions\SupplierException;
 use App\Modules\Supplier\Http\Requests\StoreSupplierRequest;
+use App\Modules\Supplier\Http\Requests\UpdateSupplierRequest;
 use App\Modules\Supplier\Repositories\Contracts\SupplierRepository as SupplierRepositoryContract;
 use App\Modules\Supplier\Services\DocumentService;
 use Illuminate\Http\JsonResponse;
@@ -41,11 +42,16 @@ class SupplierController extends BaseController
         return $this->success($supplier, 'Supplier created successfully', StatusCode::HTTP_CREATED);
     }
 
-    public function update(StoreSupplierRequest $request): JsonResponse
+    public function update(UpdateSupplierRequest $request): JsonResponse
     {
         $data = $request->validated();
 
-        $dto = UpdateSupplierDTO::make($data);
+        $payload = array_merge(
+            $data,
+            ['id' => (int) $request->route('supplier_id')]
+        );
+
+        $dto = UpdateSupplierDTO::make($payload);
 
         $supplier = $this->supplierRepository->updateSupplier($dto);
 
