@@ -10,7 +10,6 @@ use App\Modules\Supplier\Models\Supplier;
 use App\Modules\Supplier\Repositories\Contracts\SupplierRepository as SupplierRepositoryContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 
 class SupplierRepository implements SupplierRepositoryContract
 {
@@ -42,6 +41,7 @@ class SupplierRepository implements SupplierRepositoryContract
             ]);
 
             DB::commit();
+
             dispatch(new ClearSuppliersCacheJob($this->cacheKey));
 
             return $supplier
@@ -73,6 +73,7 @@ class SupplierRepository implements SupplierRepositoryContract
         $supplier->update($updateData);
 
         $supplier->refresh();
+
         dispatch(new ClearSuppliersCacheJob($this->cacheKey));
 
         return $supplier->only(['id', 'name', 'email', 'phone']);
@@ -80,15 +81,25 @@ class SupplierRepository implements SupplierRepositoryContract
 
     public function deleteSupplier(int $id): void
     {
-        $supplier = Supplier::find($id);
+        DB::beginTransaction();
 
-        if (! $supplier) {
-            return;
+        try {
+            $supplier = Supplier::find($id);
+
+            if (! $supplier) {
+                return;
+            }
+
+            $supplier->delete();
+            $supplier->address()->delete();
+
+            dispatch(new ClearSuppliersCacheJob($this->cacheKey));
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        $supplier->delete();
-        $supplier->address()->delete();
-        dispatch(new ClearSuppliersCacheJob($this->cacheKey));
     }
 
     public function findSupplierById(int $id): ?array
@@ -102,24 +113,16 @@ class SupplierRepository implements SupplierRepositoryContract
     {
         $cacheKey = $this->cacheKey.md5(json_encode($filters));
 
-        $cached = Redis::get($cacheKey);
+        return cache()->remember($cacheKey, $this->cacheTtl, function () use ($filters) {
+            $colsToReturn = ['id', 'name', 'email', 'phone', 'document', 'created_at'];
 
-        if ($cached) {
-            return json_decode($cached, true);
-        }
+            $query = Supplier::query();
 
-        $colsToReturn = ['id', 'name', 'email', 'phone', 'document', 'created_at'];
+            $this->applySearchFilters($query, $filters->search);
+            $this->applySorting($query, $filters->sortColumn, $filters->sortOrdenation);
 
-        $query = Supplier::query();
-
-        $this->applySearchFilters($query, $filters->search);
-        $this->applySorting($query, $filters->sortColumn, $filters->sortOrdenation);
-
-        $result = $query->paginate($filters->perPage, $colsToReturn, 'page', $filters->page)->toArray();
-
-        Redis::setex($cacheKey, $this->cacheTtl, json_encode($result));
-
-        return $result;
+            return $query->paginate($filters->perPage, $colsToReturn, 'page', $filters->page)->toArray();
+        });
     }
 
     protected function applySearchFilters(Builder $query, ?string $searchFilter): void

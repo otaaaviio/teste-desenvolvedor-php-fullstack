@@ -57,7 +57,7 @@ class SupplierController extends BaseController
 
         $this->supplierRepository->deleteSupplier($supplier_id);
 
-        return $this->success(null, 'Supplier deleted successfully', StatusCode::HTTP_NO_CONTENT);
+        return response()->json(null, StatusCode::HTTP_NO_CONTENT);
     }
 
     public function findAll(Request $request): JsonResponse

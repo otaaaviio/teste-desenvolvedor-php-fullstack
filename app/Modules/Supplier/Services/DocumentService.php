@@ -7,7 +7,6 @@ use App\Modules\Supplier\DTOs\SupplierAddressDTO;
 use App\Modules\Supplier\Enums\DocumentType;
 use App\Modules\Supplier\Exceptions\DocumentException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Redis;
 use Symfony\Component\HttpFoundation\Response as StatusCode;
 
 class DocumentService
@@ -18,48 +17,40 @@ class DocumentService
 
     public function getInfosByCnpj(string $cnpj): CreateSupplierDTO
     {
-        if (strlen($cnpj) !== 14) {
-            throw DocumentException::invalidDocument(DocumentType::CNPJ);
-        }
+        $hash = md5($cnpj);
 
-        $cacheKey = "supplier_cnpj_{$cnpj}";
+        $cacheKey = "supplier_cnpj_{$hash}";
 
-        $cached = Redis::get($cacheKey);
+        return cache()->remember($cacheKey, $this->cacheTtl, function () use ($cnpj) {
+            if (strlen($cnpj) !== 14) {
+                throw DocumentException::invalidDocument(DocumentType::CNPJ);
+            }
 
-        if ($cached) {
-            $data = json_decode($cached, true);
+            $result = Http::timeout(10)->get("{$this->baseUrl}/cnpj/v1/{$cnpj}");
 
-            return CreateSupplierDTO::make($data);
-        }
+            if ($result->status() !== StatusCode::HTTP_OK) {
+                throw DocumentException::brazilApiRequestFailed($result->status());
+            }
 
-        $result = Http::timeout(10)->get("{$this->baseUrl}/cnpj/v1/{$cnpj}");
+            $data = $result->json();
 
-        if ($result->status() !== StatusCode::HTTP_OK) {
-            throw DocumentException::brazilApiRequestFailed($result->status());
-        }
-
-        $data = $result->json();
-
-        $data = CreateSupplierDTO::make([
-            'name' => $data['razao_social'] ?? '',
-            'document' => $data['cnpj'],
-            'document_type' => DocumentType::CNPJ,
-            'email' => $data['email'] ?? '',
-            'phone' => $data['ddd_telefone_1'] ?? '',
-            'address' => [
-                'street' => $data['logradouro'] ?? '',
-                'number' => $data['numero'] ?? '',
-                'complement' => $data['complemento'] ?? '',
-                'neighborhood' => $data['bairro'] ?? '',
-                'city' => $data['municipio'] ?? '',
-                'state' => $data['uf'] ?? '',
-                'zip_code' => $data['cep'] ?? '',
-            ],
-        ]);
-
-        Redis::setex($cacheKey, $this->cacheTtl, json_encode($data));
-
-        return $data;
+            return CreateSupplierDTO::make([
+                'name' => $data['razao_social'] ?? '',
+                'document' => $data['cnpj'],
+                'document_type' => DocumentType::CNPJ,
+                'email' => $data['email'] ?? '',
+                'phone' => $data['ddd_telefone_1'] ?? '',
+                'address' => [
+                    'street' => $data['logradouro'] ?? '',
+                    'number' => $data['numero'] ?? '',
+                    'complement' => $data['complemento'] ?? '',
+                    'neighborhood' => $data['bairro'] ?? '',
+                    'city' => $data['municipio'] ?? '',
+                    'state' => $data['uf'] ?? '',
+                    'zip_code' => $data['cep'] ?? '',
+                ],
+            ]);
+        });
     }
 
     public function validateCnpjAddress(string $cnpj, SupplierAddressDTO $supplierAddressDTO): bool

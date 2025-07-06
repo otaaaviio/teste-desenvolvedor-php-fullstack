@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Modules\Supplier\Models\Supplier;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Example::factory(10)->create();
-
+        // Supplier::factory()->withAddress()->count(10)->create();
     }
 }
