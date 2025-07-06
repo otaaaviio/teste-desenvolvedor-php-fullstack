@@ -37,4 +37,8 @@ jobs:
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
-        run: pest
+        run: php artisan test --coverage --coverage-clover=coverage.clover --coverage-html=coverage-html --coverage-text
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
