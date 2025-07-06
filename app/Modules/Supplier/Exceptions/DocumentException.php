@@ -17,7 +17,7 @@ class DocumentException extends Exception
 
     public static function invalidDocument(DocumentType $documentType): self
     {
-        return new self("invalid {$documentType->value}.", StatusCode::HTTP_BAD_REQUEST);
+        return new self("Invalid {$documentType->value}.", StatusCode::HTTP_BAD_REQUEST);
     }
 
     public static function documentAlreadyExists(DocumentType $documentType): self
@@ -28,6 +28,11 @@ class DocumentException extends Exception
     public static function documentNotFound(DocumentType $documentType): self
     {
         return new self("{$documentType->value} not found.", StatusCode::HTTP_NOT_FOUND);
+    }
+
+    public static function brazilApiRequestFailed(int $errorStatuss): self
+    {
+        return new self("Brazil API request failed for CNPJ. HTTP Status: {$errorStatuss}.", StatusCode::HTTP_BAD_GATEWAY);
     }
 
     public function render(): JsonResponse

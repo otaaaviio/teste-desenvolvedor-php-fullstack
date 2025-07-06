@@ -19,13 +19,14 @@ readonly class CreateSupplierDTO implements \JsonSerializable
     {
         $document = preg_replace('/\D/', '', $payload['document']);
         $documentType = strlen($document) === 14 ? DocumentType::CNPJ : DocumentType::CPF;
+        $phone = preg_replace('/\D/', '', $payload['phone'] ?? '');
 
         return new self(
             name: $payload['name'],
             document: $document,
             documentType: $documentType,
             email: $payload['email'] ?? null,
-            phone: $payload['phone'] ?? null,
+            phone: $phone,
             address: SupplierAddressDTO::make($payload['address'])
         );
     }

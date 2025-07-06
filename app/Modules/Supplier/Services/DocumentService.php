@@ -34,8 +34,8 @@ class DocumentService
 
         $result = Http::timeout(10)->get("{$this->baseUrl}/cnpj/v1/{$cnpj}");
 
-        if ($result->status() === StatusCode::HTTP_NOT_FOUND) {
-            throw DocumentException::documentNotFound(DocumentType::CNPJ);
+        if ($result->status() !== StatusCode::HTTP_OK) {
+            throw DocumentException::brazilApiRequestFailed($result->status());
         }
 
         $data = $result->json();
