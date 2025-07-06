@@ -25,4 +25,4 @@ jobs:
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress --no-interaction --configuration=phpstan.neon
       - name: Run Pint
-        run: vendor/bin/pint --test --no-progress --no-interaction
+        run: vendor/bin/pint --test --no-interaction
