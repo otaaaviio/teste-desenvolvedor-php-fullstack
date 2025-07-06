@@ -5,7 +5,7 @@ namespace App\Modules\Supplier\Repositories;
 use App\Modules\Supplier\DTOs\CreateSupplierDTO;
 use App\Modules\Supplier\DTOs\SupplierFilterDTO;
 use App\Modules\Supplier\DTOs\UpdateSupplierDTO;
-use App\Modules\Supplier\Jobs\ClearSuppliersCache;
+use App\Modules\Supplier\Jobs\ClearSuppliersCacheJob;
 use App\Modules\Supplier\Models\Supplier;
 use App\Modules\Supplier\Repositories\Contracts\SupplierRepository as SupplierRepositoryContract;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,7 +42,7 @@ class SupplierRepository implements SupplierRepositoryContract
             ]);
 
             DB::commit();
-            dispatch(new ClearSuppliersCache($this->cacheKey));
+            dispatch(new ClearSuppliersCacheJob($this->cacheKey));
 
             return $supplier
                 ->with(['address' => function ($query) {
@@ -73,7 +73,7 @@ class SupplierRepository implements SupplierRepositoryContract
         $supplier->update($updateData);
 
         $supplier->refresh();
-        dispatch(new ClearSuppliersCache($this->cacheKey));
+        dispatch(new ClearSuppliersCacheJob($this->cacheKey));
 
         return $supplier->only(['id', 'name', 'email', 'phone']);
     }
@@ -88,7 +88,7 @@ class SupplierRepository implements SupplierRepositoryContract
 
         $supplier->delete();
         $supplier->address()->delete();
-        dispatch(new ClearSuppliersCache($this->cacheKey));
+        dispatch(new ClearSuppliersCacheJob($this->cacheKey));
     }
 
     public function findSupplierById(int $id): ?array

@@ -27,7 +27,7 @@ class StoreSupplierRequest extends FormRequest
             'address.neighborhood' => 'nullable|string|max:255',
             'address.city' => 'required|string|max:255',
             'address.state' => 'required|string|size:2',
-            'address.zip_code' => 'required|string|size:9',
+            'address.zip_code' => 'required|string|min:8|max:9',
         ];
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Redis;
 
-class ClearSuppliersCache implements ShouldQueue
+class ClearSuppliersCacheJob implements ShouldQueue
 {
     use Queueable;
 

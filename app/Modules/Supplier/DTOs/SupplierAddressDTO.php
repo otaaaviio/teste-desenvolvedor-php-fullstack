@@ -16,6 +16,8 @@ readonly class SupplierAddressDTO implements \JsonSerializable
 
     public static function make(array $payload): self
     {
+        $zipCode = preg_replace('/\D/', '', $payload['zip_code'] ?? '');
+
         return new self(
             street: $payload['street'],
             number: $payload['number'] ?? null,
@@ -23,7 +25,7 @@ readonly class SupplierAddressDTO implements \JsonSerializable
             neighborhood: $payload['neighborhood'] ?? null,
             city: $payload['city'],
             state: $payload['state'],
-            zipCode: $payload['zip_code']
+            zipCode: $zipCode
         );
     }
 
