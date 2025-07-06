@@ -4,25 +4,20 @@ namespace App\Modules\Supplier\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Redis;
 
 class ClearSuppliersCacheJob implements ShouldQueue
 {
     use Queueable;
 
-    protected string $cacheKey;
+    protected string $cacheTag;
 
-    public function __construct(string $cacheKey)
+    public function __construct(string $cacheTag)
     {
-        $this->cacheKey = $cacheKey;
+        $this->cacheTag = $cacheTag;
     }
 
     public function handle(): void
     {
-        $keys = Redis::keys($this->cacheKey.'*');
-
-        foreach ($keys as $key) {
-            Redis::del($key);
-        }
+        cache()->tags([$this->cacheTag])->flush();
     }
 }

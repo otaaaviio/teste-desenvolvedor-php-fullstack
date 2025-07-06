@@ -13,15 +13,12 @@ class DocumentService
 {
     protected string $baseUrl = 'https://brasilapi.com.br/api';
 
-    protected int $cacheTtl = 60 * 60;
-
     public function getInfosByCnpj(string $cnpj): CreateSupplierDTO
     {
-        $hash = md5($cnpj);
+        $cacheTtl = 60 * 60;
+        $cacheKey = md5($cnpj);
 
-        $cacheKey = "supplier_cnpj_{$hash}";
-
-        return cache()->remember($cacheKey, $this->cacheTtl, function () use ($cnpj) {
+        return cache()->tags(['supplier_cnpj'])->remember($cacheKey, $cacheTtl, function () use ($cnpj) {
             if (strlen($cnpj) !== 14) {
                 throw DocumentException::invalidDocument(DocumentType::CNPJ);
             }

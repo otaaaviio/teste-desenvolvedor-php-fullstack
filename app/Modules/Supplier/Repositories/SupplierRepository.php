@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class SupplierRepository implements SupplierRepositoryContract
 {
-    protected string $cacheKey = 'suppliers_list_';
+    protected string $cacheTag = 'suppliers_list';
 
     protected int $cacheTtl = 60 * 60 * 24;
 
@@ -42,7 +42,7 @@ class SupplierRepository implements SupplierRepositoryContract
 
             DB::commit();
 
-            dispatch(new ClearSuppliersCacheJob($this->cacheKey));
+            dispatch(new ClearSuppliersCacheJob($this->cacheTag));
 
             return $supplier
                 ->with(['address' => function ($query) {
@@ -74,7 +74,7 @@ class SupplierRepository implements SupplierRepositoryContract
 
         $supplier->refresh();
 
-        dispatch(new ClearSuppliersCacheJob($this->cacheKey));
+        dispatch(new ClearSuppliersCacheJob($this->cacheTag));
 
         return $supplier->only(['id', 'name', 'email', 'phone']);
     }
@@ -93,7 +93,7 @@ class SupplierRepository implements SupplierRepositoryContract
             $supplier->delete();
             $supplier->address()->delete();
 
-            dispatch(new ClearSuppliersCacheJob($this->cacheKey));
+            dispatch(new ClearSuppliersCacheJob($this->cacheTag));
 
             DB::commit();
         } catch (\Exception $e) {
@@ -111,9 +111,9 @@ class SupplierRepository implements SupplierRepositoryContract
 
     public function findAllSuppliers(SupplierFilterDTO $filters): array
     {
-        $cacheKey = $this->cacheKey.md5(json_encode($filters));
+        $cacheKey = md5(json_encode($filters));
 
-        return cache()->remember($cacheKey, $this->cacheTtl, function () use ($filters) {
+        return cache()->tags([$this->cacheTag])->remember($cacheKey, $this->cacheTtl, function () use ($filters) {
             $colsToReturn = ['id', 'name', 'email', 'phone', 'document', 'created_at'];
 
             $query = Supplier::query();
