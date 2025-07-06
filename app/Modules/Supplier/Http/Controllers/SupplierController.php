@@ -8,6 +8,7 @@ use App\Modules\Supplier\DTOs\SupplierFilterDTO;
 use App\Modules\Supplier\DTOs\UpdateSupplierDTO;
 use App\Modules\Supplier\Enums\DocumentType;
 use App\Modules\Supplier\Exceptions\DocumentException;
+use App\Modules\Supplier\Exceptions\SupplierException;
 use App\Modules\Supplier\Http\Requests\StoreSupplierRequest;
 use App\Modules\Supplier\Repositories\Contracts\SupplierRepository as SupplierRepositoryContract;
 use App\Modules\Supplier\Services\DocumentService;
@@ -74,6 +75,10 @@ class SupplierController extends BaseController
         $supplier_id = (int) $request->route('supplier_id');
 
         $supplier = $this->supplierRepository->findSupplierById($supplier_id);
+
+        if (! $supplier) {
+            throw SupplierException::notFound($supplier_id);
+        }
 
         return $this->success($supplier);
     }
