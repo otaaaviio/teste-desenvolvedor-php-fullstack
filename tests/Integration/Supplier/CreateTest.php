@@ -5,23 +5,46 @@ namespace Tests\Integration\Supplier;
 use App\Modules\Supplier\Jobs\ClearSuppliersCacheJob;
 use App\Modules\Supplier\Models\Supplier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Response as StatusCode;
 use Illuminate\Support\Facades\Queue;
 
-uses(DatabaseTransactions::class, WithFaker::class);
+use function Pest\Faker\fake;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
 
-uses()->group('Supplier Integration Test');
+uses(DatabaseTransactions::class);
+
+uses()->group('supplier-create');
 
 $baseUrl = 'api/v1/suppliers';
 
+function getValidPayloadWithCPF(): array
+{
+    return [
+        'name' => fake()->company(),
+        'email' => fake()->email(),
+        'phone' => fake()->phoneNumber(),
+        'document' => '91905567049',
+        'document_type' => 'CPF',
+        'address' => [
+            'street' => fake()->streetName(),
+            'number' => fake()->buildingNumber(),
+            'complement' => fake()->secondaryAddress(),
+            'neighborhood' => fake()->streetSuffix(),
+            'city' => fake()->city(),
+            'state' => fake()->stateAbbr(),
+            'zip_code' => '12345-678',
+        ],
+    ];
+}
+
 test('can create a supplier with valid cnpj data', function () use ($baseUrl) {
     $petobrasCnpj = '33000167000101';
-    $cnpjResponse = $this->getJson($baseUrl.'/cnpj/'.$petobrasCnpj);
+    $cnpjResponse = getJson($baseUrl.'/cnpj/'.$petobrasCnpj);
 
     $cnpjData = $cnpjResponse->json() ?? [];
 
-    $response = $this->postJson($baseUrl, $cnpjData['data']);
+    $response = postJson($baseUrl, $cnpjData['data']);
 
     $response->assertStatus(StatusCode::HTTP_CREATED)
         ->assertJsonStructure([
@@ -46,7 +69,7 @@ test('can create a supplier with valid cnpj data', function () use ($baseUrl) {
 });
 
 test('can not create a supplier with invalid data', function () use ($baseUrl) {
-    $response = $this->postJson($baseUrl, []);
+    $response = postJson($baseUrl, []);
 
     $response->assertStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)
         ->assertJsonStructure([
@@ -56,24 +79,9 @@ test('can not create a supplier with invalid data', function () use ($baseUrl) {
 });
 
 test('can create a supplier with valid cpf data', function () use ($baseUrl) {
-    $payload = [
-        'name' => $this->faker->company(),
-        'email' => $this->faker->email(),
-        'phone' => $this->faker->phoneNumber(),
-        'document' => '91905567049',
-        'document_type' => 'CPF',
-        'address' => [
-            'street' => $this->faker->streetName(),
-            'number' => $this->faker->buildingNumber(),
-            'complement' => $this->faker->secondaryAddress(),
-            'neighborhood' => $this->faker->streetSuffix(),
-            'city' => $this->faker->city(),
-            'state' => $this->faker->stateAbbr(),
-            'zip_code' => '12345-678',
-        ],
-    ];
+    $payload = getValidPayloadWithCPF();
 
-    $response = $this->postJson($baseUrl, $payload);
+    $response = postJson($baseUrl, $payload);
 
     expect($response->status())->toBe(StatusCode::HTTP_CREATED);
 
@@ -87,25 +95,23 @@ test('can create a supplier with valid cpf data', function () use ($baseUrl) {
 test('should call cache cleaning job after creating a supplier', function () use ($baseUrl) {
     Queue::fake();
 
-    $payload = [
-        'name' => $this->faker->company(),
-        'email' => $this->faker->email(),
-        'phone' => $this->faker->phoneNumber(),
-        'document' => '91905567049',
-        'document_type' => 'CPF',
-        'address' => [
-            'street' => $this->faker->streetName(),
-            'number' => $this->faker->buildingNumber(),
-            'complement' => $this->faker->secondaryAddress(),
-            'neighborhood' => $this->faker->streetSuffix(),
-            'city' => $this->faker->city(),
-            'state' => $this->faker->stateAbbr(),
-            'zip_code' => '12345-678',
-        ],
-    ];
+    $payload = getValidPayloadWithCPF();
 
-    $response = $this->postJson($baseUrl, $payload);
+    $response = postJson($baseUrl, $payload);
     $response->assertStatus(StatusCode::HTTP_CREATED);
 
     Queue::assertPushed(ClearSuppliersCacheJob::class);
-})->only();
+});
+
+test('should clear cache after creating a supplier', function () use ($baseUrl) {
+    cache()->tags(['suppliers_list'])->put('test_key', 'test_value', 60);
+
+    expect(cache()->tags(['suppliers_list'])->get('test_key'))->toBe('test_value');
+
+    $payload = getValidPayloadWithCPF();
+
+    $response = postJson($baseUrl, $payload);
+    $response->assertStatus(StatusCode::HTTP_CREATED);
+
+    expect(cache()->tags(['suppliers_list'])->get('test_key'))->toBeNull();
+});
