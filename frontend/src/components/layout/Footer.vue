@@ -11,7 +11,7 @@
                 </Button>
             </div>
         </div>
-        <Toaster position="top-center" />
+        <Toaster position="top-center"/>
     </footer>
 </template>
 
